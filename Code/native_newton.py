@@ -1,6 +1,6 @@
 import numpy as np
-import matplotlib.pyplot as plt
 import data_clean as data_clean
+import plotter as plot
 
 
 def sigmoid(x):
@@ -8,6 +8,12 @@ def sigmoid(x):
 
 def log_loss(y_true, y_pred):
     return -np.mean(y_true * np.log(y_pred) + (1 - y_true) * np.log(1 - y_pred))
+
+def log_loss_reg(y, y_pred, w, reg_param=0.001):  
+    loss = -np.mean(y * np.log(y_pred) + (1 - y) * np.log(1 - y_pred))
+    reg_loss = reg_param * np.sum(w**2/(1+w**2))  # Non-convex regularizer    
+    total_loss = loss + reg_loss    
+    return total_loss
 
 def gradient(y_true, y_pred, X):
     return np.dot(X.T, y_pred - y_true) / len(y_true)
@@ -38,13 +44,10 @@ def newton_method(X, y_true, X_test, y_true_test, num_iterations=100, learning_r
 
         # Calculate gradient and Hessian
         grad = gradient(y_true, y_pred, X)
+        print(grad)
         hess = hessian(y_pred, X)
-        print(weights)
         # Update weights using Newton's method
-        weights -= np.dot(np.linalg.inv(hess), grad) * learning_rate
-        print(weights)
-        
-
+        weights -= np.dot(np.linalg.inv(hess), grad) * learning_rate        
     return weights, accuracy_list, logloss_list
 
 def calculate_accuracy(X, weights, labels_test):
@@ -57,7 +60,7 @@ def calculate_accuracy(X, weights, labels_test):
 
     # Evaluate the predictions using appropriate evaluation metrics (e.g., accuracy, log loss)
     accuracy = np.mean(test_predictions == labels_test)
-    logloss = log_loss(labels_test, test_pred_probs)
+    logloss = log_loss_reg(labels_test, test_pred_probs, weights)
     return accuracy, logloss
 
 def run(num_iterations, filepath_train, filepath_test, type):
@@ -86,40 +89,5 @@ def run(num_iterations, filepath_train, filepath_test, type):
     # Optimize using Newton's method
 
     weights, accuracy, log_loss = newton_method(X, labels, X_test, labels_test, num_iterations=num_iterations)
-    plot_accuracy(accuracy, type)
-    plot_logloss(log_loss, type)
-
-def plot_accuracy(x, datasetName):
-    data = x
-    x = range(len(x))
-
-    plt.plot(x, data)
-    plt.xlabel('iteration')
-    plt.ylabel('accuracy in percent')
-    plt.title(f'Accuracy over iteration in {datasetName} dataset')
-    plt.savefig(f'Accuracy over iteration in {datasetName} dataset')
-
-    plt.show()
-    
-    plt.close()
-
-def plot_logloss(x, datasetName):
-    data = x
-    x = range(len(x))
-
-    plt.plot(x, data)
-    plt.xlabel('iteration')
-    plt.ylabel('log loss')
-    plt.title(f'Logloss over iterations in {datasetName} dataset')
-    plt.savefig(f'Logloss over iterations in {datasetName} dataset')
-
-    plt.show()
-    plt.close()
-
-
-run(10, 'Datasets/ijcnn/train', 'Datasets/ijcnn/test', type="ijcnn")
-
-
-
-
-
+    plot.plot_accuracy(accuracy, type)
+    plot.plot_logloss(log_loss, type)
