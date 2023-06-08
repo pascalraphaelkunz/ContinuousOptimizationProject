@@ -18,3 +18,19 @@ def process_data_a9a(file_path):
                 continue
             data.append([label] + features)
     return data
+
+def process_data_ijcnn(file_path):
+    data = []
+    with open(file_path, 'r') as file:
+        for line in file:
+            line = line.strip()
+            # Split the line by whitespace
+            elements = line.split()
+            try:
+                label = int(elements[0])
+            except:
+                continue
+            features = [float(feature.split(':')[1]) for feature in elements[2:]]
+            #For some reason, the number of features is not consistent...
+            data.append([label] + features)
+    return data
