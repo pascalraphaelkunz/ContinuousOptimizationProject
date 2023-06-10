@@ -42,7 +42,7 @@ def hessian(y_pred, X):
     diag = np.diag(y_pred * (1 - y_pred))
     return np.dot(np.dot(X.T, diag), X) / len(y_pred)
 
-def update_weights(method: str, hess, gradient, weights, H=1):
+def update_weights(method: str, hess, gradient, weights, H=1, step_size=0.01, y_true=None, X = None, loss = None):
     '''
     Given a specific newton method, we update the weights differently
     '''
@@ -53,18 +53,41 @@ def update_weights(method: str, hess, gradient, weights, H=1):
         # Method from https://arxiv.org/abs/2112.02089
         weights -= np.dot(np.linalg.inv(hess + np.sqrt(H*np.linalg.norm(gradient)) * np.eye(len(weights))), gradient)
         return weights
-    elif method == 'damped_newton':
-        # Update weights using the damped Newton method with damping technique
-        damping_factor = 1.5 # Damping factor schedule
-        weights_new = weights - damping_factor * np.linalg.inv(hess).dot(gradient)
-        weights = weights_new
+    if method == 'linesearch_newton':
+        # Line search strategy
+        direction = np.dot(np.linalg.inv(hess), gradient)
+        for i in range(10):
+            new_weights = weights - step_size * direction
+            y_pred = sigmoid(np.dot(X, new_weights))
+            new_loss = log_loss(y_true, y_pred)
+            if new_loss < loss:
+                weights = new_weights
+                break
+            step_size /= 2
+        return weights
+    elif method == 'trust_region_newton':
+        # Solve the trust region subproblem and update weights
+        p = solve_trust_region_subproblem(hess, gradient, step_size)
+        weights += p
+        return weights  
+    else:
+        raise ValueError("Invalid method specified.")
 
-    return weights
-        
+def solve_trust_region_subproblem(hess, grad, delta):
+    """
+    Solve the trust region subproblem to obtain the step p.
+    """
+    # Compute the Newton step
+    p = np.linalg.solve(hess + delta * np.eye(len(grad)), -grad)
 
+    # Apply the trust region constraint
+    norm_p = np.linalg.norm(p)
+    if norm_p <= delta:
+        return p
+    else:
+        return (delta / norm_p) * p
 
-
-def newton_method(X, y_true, X_test, y_true_test, num_iterations=100, regularized=False, method='normal_newton', H=1):
+def newton_method(X, y_true, X_test, y_true_test, num_iterations=100, regularized=False, method='normal_newton', H=1, step_size=0.01):
     # Initialize weights
     num_features = X.shape[1]
     weights = np.zeros(num_features)
@@ -83,7 +106,7 @@ def newton_method(X, y_true, X_test, y_true_test, num_iterations=100, regularize
         grad = gradient(y_true, y_pred, X, w=weights, regularized=regularized)
         hess = hessian(y_pred, X)
         # Update weights using Newton's method
-        weights = update_weights(method, hess, grad, weights, H=H)    
+        weights = update_weights(method, hess, grad, weights, H=H, y_true=y_true, X=X, loss=logloss, step_size=step_size)    
     return weights, accuracy_list, logloss_list
 
 def calculate_accuracy(X, weights, labels_test, regularized=False):
@@ -97,13 +120,12 @@ def calculate_accuracy(X, weights, labels_test, regularized=False):
     # Evaluate the predictions using appropriate evaluation metrics (e.g., accuracy, log loss)
     accuracy = np.mean(test_predictions == labels_test)
     logloss = log_loss_reg(labels_test, test_pred_probs, weights) if regularized else log_loss(labels_test, test_pred_probs)
-    print(accuracy)
-    print(logloss)
+    
     return accuracy, logloss
 
 
 
-def run(num_iterations, filepath_train, filepath_test, type, regularized=False, method="normal_newton", H=1):
+def run(num_iterations, filepath_train, filepath_test, type, regularized=False, method="normal_newton", H=1, step_size=0.01):
     if type == "a9a":
         full_dataset = np.array(data_clean.process_data_a9a(file_path=filepath_train))
         full_dataset_test = np.array(data_clean.process_data_a9a(file_path=filepath_test))
@@ -127,15 +149,6 @@ def run(num_iterations, filepath_train, filepath_test, type, regularized=False, 
 
 
     # Optimize using Newton's method
-    weights, accuracy, log_loss = newton_method(X, labels, X_test, labels_test, num_iterations=num_iterations, regularized=regularized, method=method, H=H)
-    # Specify the file name for the CSV file
-    file_name = 'data.csv'
-    data = zip(accuracy, log_loss, range(1,len(log_loss)+1))
-
-    # Write the data to the CSV file
-    with open(file_name, 'w', newline='') as csv_file:
-        writer = csv.writer(csv_file)
-        writer.writerow(['accuracy', 'logloss', 'iteration'])  # Write the header row
-        writer.writerows(data)  # Write the data rows
-    plot.plot_accuracy(accuracy, type, method=method)
-    plot.plot_logloss(log_loss, type, method=method)
+    weights, accuracy, log_loss = newton_method(X, labels, X_test, labels_test, num_iterations=num_iterations, regularized=regularized, method=method, H=H, step_size=step_size)
+ 
+    return weights, accuracy, log_loss

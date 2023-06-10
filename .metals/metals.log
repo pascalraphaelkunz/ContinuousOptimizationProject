@@ -1,0 +1,37 @@
+2023.06.09 12:47:45 INFO  Started: Metals version 0.11.12 in workspace '/home/fewaki31-adm/Documents/Lectures/Continuous Optimization/ContinuousOptimizationProject' for client Visual Studio Code 1.78.2.
+Jun 09, 2023 12:47:46 PM org.flywaydb.core.internal.license.VersionPrinter printVersionOnly
+INFO: Flyway Community Edition 9.16.3 by Redgate
+Jun 09, 2023 12:47:46 PM org.flywaydb.core.internal.license.VersionPrinter printVersion
+INFO: See release notes here: https://rd.gt/416ObMi
+Jun 09, 2023 12:47:46 PM org.flywaydb.core.internal.license.VersionPrinter printVersion
+INFO: 
+Jun 09, 2023 12:47:46 PM org.flywaydb.core.internal.database.base.BaseDatabaseType createDatabase
+INFO: Database: jdbc:h2:file:/home/fewaki31-adm/Documents/Lectures/Continuous Optimization/ContinuousOptimizationProject/.metals/metals (H2 2.1)
+Jun 09, 2023 12:47:46 PM org.flywaydb.core.internal.schemahistory.JdbcTableSchemaHistory allAppliedMigrations
+INFO: Schema history table "PUBLIC"."flyway_schema_history" does not exist yet
+Jun 09, 2023 12:47:46 PM org.flywaydb.core.internal.command.DbValidate validate
+INFO: Successfully validated 4 migrations (execution time 00:00.012s)
+Jun 09, 2023 12:47:46 PM org.flywaydb.core.internal.schemahistory.JdbcTableSchemaHistory create
+INFO: Creating Schema History table "PUBLIC"."flyway_schema_history" ...
+Jun 09, 2023 12:47:46 PM org.flywaydb.core.internal.command.DbMigrate migrateGroup
+INFO: Current version of schema "PUBLIC": << Empty Schema >>
+Jun 09, 2023 12:47:46 PM org.flywaydb.core.internal.command.DbMigrate doMigrateGroup
+INFO: Migrating schema "PUBLIC" to version "1 - Create tables"
+Jun 09, 2023 12:47:46 PM org.flywaydb.core.internal.command.DbMigrate doMigrateGroup
+INFO: Migrating schema "PUBLIC" to version "2 - Server discovery"
+Jun 09, 2023 12:47:46 PM org.flywaydb.core.internal.command.DbMigrate doMigrateGroup
+INFO: Migrating schema "PUBLIC" to version "3 - Jar symbols"
+Jun 09, 2023 12:47:46 PM org.flywaydb.core.internal.command.DbMigrate doMigrateGroup
+INFO: Migrating schema "PUBLIC" to version "4 - Fingerprints"
+Jun 09, 2023 12:47:46 PM org.flywaydb.core.internal.command.DbMigrate logSummary
+INFO: Successfully applied 4 migrations to schema "PUBLIC", now at version v4 (execution time 00:00.095s)
+2023.06.09 12:47:46 INFO  time: initialize in 0.57s
+2023.06.09 12:47:47 WARN  Build server is not auto-connectable.
+2023.06.09 12:47:47 WARN  no build tool detected in workspace '/home/fewaki31-adm/Documents/Lectures/Continuous Optimization/ContinuousOptimizationProject'. The most common cause for this problem is that the editor was opened in the wrong working directory, for example if you use sbt then the workspace directory should contain build.sbt. 
+Jun 09, 2023 12:48:38 PM org.eclipse.lsp4j.jsonrpc.services.GenericEndpoint notify
+INFO: Unsupported notification method: $/setTrace
+Jun 09, 2023 12:49:02 PM org.eclipse.lsp4j.jsonrpc.services.GenericEndpoint notify
+INFO: Unsupported notification method: $/setTrace
+2023.06.09 12:52:00 INFO  Shutting down server
+2023.06.09 12:52:00 INFO  shutting down Metals
+2023.06.09 12:52:00 INFO  Exiting server

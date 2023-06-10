@@ -1,20 +1,26 @@
-from joblib import Parallel, delayed
+import csv
 import newton
 from time import time
 
-def run_native_newton(*args, **kwargs):
-    newton.run(*args, **kwargs)
+methods = ["normal_newton", "regularized_newton", "linesearch_newton", "trust_region_newton"]
 
-if __name__ == '__main__':
-    start = time()
-    # Define the arguments for each function call
-    ijcnn_args = (10, 'Datasets/ijcnn/train', 'Datasets/ijcnn/test')
-    a9a_args = (10, 'Datasets/a9a/train.txt', 'Datasets/a9a/test.txt')
-        
+# Create a CSV file for storing the results
+filename = f"experimentation_result_a9a{str(time())}.csv"
+with open(filename, mode='w', newline='') as file:
+    writer = csv.writer(file)
+    writer.writerow(["Method", "Iteration", "Accuracy", "Log Loss"])
 
-    # Create a list of argument tuples
-    args_list = [(ijcnn_args, {'type': 'ijcnn'}), (a9a_args, {'type': 'a9a'})]
+    for method in methods:
+        print(method)
 
-    # Execute the function calls in parallel
-    Parallel(n_jobs=2)(delayed(run_native_newton)(*args, **kwargs) for args, kwargs in args_list)
-    print(time()-start)
+        # Run Native Newton's Code for ijcnn dataset
+        _, acc, log_loss = newton.run(40, 'Datasets/a9a/train.txt', 'Datasets/a9a/test.txt', type="a9a", method=method, step_size=0.2, H=1)
+
+        # Write the results to the CSV file
+        for i in range(len(acc)):
+            writer.writerow([method, i+1, acc[i], log_loss[i]])
+
+        print("done")
+    
+
+print("Results saved to experimentation_result.csv")
