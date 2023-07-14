@@ -69,7 +69,12 @@ def update_weights(method: str, hess, gradient, weights, H=1, step_size=0.01, y_
         # Solve the trust region subproblem and update weights
         p = solve_trust_region_subproblem(hess, gradient, step_size)
         weights += p
-        return weights  
+        return weights
+    elif method == 'damped_newton':
+        #Solve damped_newton method according to https://arxiv.org/pdf/2211.00140.pdf
+        #Lipschitz constant of logistic loss = 1 therefore a_k = (-1 + sqrt(1+2))/1
+        weights -= np.dot((-1 + np.sqrt(1+2))/1 *np.linalg.inv(hess), gradient)
+        return weights       
     else:
         raise ValueError("Invalid method specified.")
 

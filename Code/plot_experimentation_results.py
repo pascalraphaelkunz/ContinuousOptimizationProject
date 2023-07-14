@@ -2,7 +2,7 @@ import pandas as pd
 import matplotlib.pyplot as plt
 
 # Read the CSV file
-data = pd.read_csv('/home/fewaki31-adm/Documents/Lectures/Continuous Optimization/ContinuousOptimizationProject/experimentation_result_a9a1686397730.9361079.csv')
+data = pd.read_csv('/home/fewaki31-adm/Documents/Lectures/Continuous Optimization/ContinuousOptimizationProject/experimentation_result_a9a_regularized1689341651.5934105.csv')
 
 # Group the data by method
 grouped_data = data.groupby('Method')
