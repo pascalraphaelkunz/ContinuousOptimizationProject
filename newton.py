@@ -1,9 +1,6 @@
 import numpy as np
 import data_clean as data_clean
-import plotter as plot
 import csv
-
-
 
 
 def sigmoid(x):
@@ -28,6 +25,22 @@ def log_loss_reg(y, y_pred, w, reg_param=0.001):
     total_loss = loss + reg_loss    
     return total_loss
 
+
+def compute_lipschitz_constant(f, a, b, num_points=1000):
+    """
+    Compute the Lipschitz constant of a function f over the interval [a, b].
+    """
+    # Generate equidistant points within the interval
+    x = np.linspace(a, b, num_points)
+
+    # Calculate the absolute difference in function values
+    diffs = np.abs(f(x[1:]) - f(x[:-1]))
+
+    # Compute the Lipschitz constant as the maximum difference ratio
+    lipschitz_constant = np.max(diffs / (x[1:] - x[:-1]))
+
+    return lipschitz_constant
+
 def gradient(y_true, y_pred, X, w, reg_param=0.001, regularized=False):
     '''
     Computes gradient of log-loss or regularized log-loss
@@ -42,7 +55,7 @@ def hessian(y_pred, X):
     diag = np.diag(y_pred * (1 - y_pred))
     return np.dot(np.dot(X.T, diag), X) / len(y_pred)
 
-def update_weights(method: str, hess, gradient, weights, H=1, step_size=0.01, y_true=None, X = None, loss = None):
+def update_weights(method: str, hess, gradient, weights, H=2, trust_region=[0.2], step_size=0.2, y_true=None, X = None, loss = None, regularized=False):
     '''
     Given a specific newton method, we update the weights differently
     '''
@@ -59,7 +72,7 @@ def update_weights(method: str, hess, gradient, weights, H=1, step_size=0.01, y_
         for i in range(10):
             new_weights = weights - step_size * direction
             y_pred = sigmoid(np.dot(X, new_weights))
-            new_loss = log_loss(y_true, y_pred)
+            new_loss = log_loss_reg(y_true, y_pred, new_weights) if regularized else log_loss(y_true, y_pred)
             if new_loss < loss:
                 weights = new_weights
                 break
@@ -67,16 +80,19 @@ def update_weights(method: str, hess, gradient, weights, H=1, step_size=0.01, y_
         return weights
     elif method == 'trust_region_newton':
         # Solve the trust region subproblem and update weights
-        p = solve_trust_region_subproblem(hess, gradient, step_size)
+        p = solve_trust_region_subproblem(hess, gradient, trust_region[0])
         weights += p
         return weights
     elif method == 'damped_newton':
         #Solve damped_newton method according to https://arxiv.org/pdf/2211.00140.pdf
-        #Lipschitz constant of logistic loss = 1 therefore a_k = (-1 + sqrt(1+2))/1
-        weights -= np.dot((-1 + np.sqrt(1+2))/1 *np.linalg.inv(hess), gradient)
+        #Lipschitz constant of logistic loss = 1 therefore a_k = (-1 + sqrt(1+2||nabla f(x)||))/1*||nabla f(x)||
+        weights -= np.dot((-1 + np.sqrt(1+2*np.linalg.norm(gradient)))/np.linalg.norm(gradient) *np.linalg.inv(hess), gradient)
         return weights       
     else:
         raise ValueError("Invalid method specified.")
+
+
+
 
 def solve_trust_region_subproblem(hess, grad, delta):
     """
@@ -92,7 +108,9 @@ def solve_trust_region_subproblem(hess, grad, delta):
     else:
         return (delta / norm_p) * p
 
-def newton_method(X, y_true, X_test, y_true_test, num_iterations=100, regularized=False, method='normal_newton', H=1, step_size=0.01):
+
+
+def newton_method(X, y_true, X_test, y_true_test, num_iterations=100, regularized=False, method='normal_newton', H=1):
     # Initialize weights
     num_features = X.shape[1]
     weights = np.zeros(num_features)
@@ -111,7 +129,7 @@ def newton_method(X, y_true, X_test, y_true_test, num_iterations=100, regularize
         grad = gradient(y_true, y_pred, X, w=weights, regularized=regularized)
         hess = hessian(y_pred, X)
         # Update weights using Newton's method
-        weights = update_weights(method, hess, grad, weights, H=H, y_true=y_true, X=X, loss=logloss, step_size=step_size)    
+        weights = update_weights(method, hess, grad, weights, H=H, y_true=y_true, X=X, loss=logloss)    
     return weights, accuracy_list, logloss_list
 
 def calculate_accuracy(X, weights, labels_test, regularized=False):
@@ -130,7 +148,7 @@ def calculate_accuracy(X, weights, labels_test, regularized=False):
 
 
 
-def run(num_iterations, filepath_train, filepath_test, type, regularized=False, method="normal_newton", H=1, step_size=0.01):
+def run(num_iterations, filepath_train, filepath_test, type, regularized=False, method="normal_newton", H=1):
     if type == "a9a":
         full_dataset = np.array(data_clean.process_data_a9a(file_path=filepath_train))
         full_dataset_test = np.array(data_clean.process_data_a9a(file_path=filepath_test))
@@ -154,6 +172,36 @@ def run(num_iterations, filepath_train, filepath_test, type, regularized=False, 
 
 
     # Optimize using Newton's method
-    weights, accuracy, log_loss = newton_method(X, labels, X_test, labels_test, num_iterations=num_iterations, regularized=regularized, method=method, H=H, step_size=step_size)
+    weights, accuracy, log_loss = newton_method(X, labels, X_test, labels_test, num_iterations=num_iterations, regularized=regularized, method=method, H=H)
  
     return weights, accuracy, log_loss
+
+# def objective(p, hess, gradient):
+#     return  np.dot(p, np.dot(hess, p)) + np.dot(gradient, p)
+
+# def min_qk(weights, hess, gradient, radius):
+#     def objective_inner(p):
+#         return 0.5*np.dot(p, np.dot(hess, p)) + np.dot(gradient,p) 
+
+#     def constraint(p):
+#         return np.linalg.norm(p) -radius
+
+
+#     result = minimize(objective_inner, np.zeros(len(gradient)), method='SLSQP', constraints={'type': 'ineq', 'fun': constraint})
+#     return result.x
+
+# def calculate_pk(s, weights, hess, gradient):
+#     return (sigmoid(weights + s) - sigmoid(weights))/(objective(s, hess, gradient))
+
+
+# def update_trust_region(weights, trust_region, rho, eta1=0.1, eta2=0.9):
+#     print(rho)
+#     rho = np.linalg.norm(rho)
+#     if rho >= eta2:
+#         trust_region = 2*trust_region
+#         weights = weights + rho
+#     elif rho >= eta1:
+#         weights = weights + rho
+#     else:
+#         trust_region = 0.5 * trust_region
+#     return trust_region, weights
